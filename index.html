@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mini App de Prueba</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>👋 Hola desde la Mini App!</h1>
+    <p>Esta es una página web simple.</p>
+    
+    <button onclick="enviarMensajeAlBot()">
+        Enviar un mensaje a tu asistente
+    </button>
+
+    <script>
+        // Inicializar la WebApp de Telegram
+        Telegram.WebApp.ready();
+        
+        // Mostrar el botón de cierre nativo de Telegram
+        Telegram.WebApp.MainButton.setText('Cerrar Aplicación');
+        Telegram.WebApp.MainButton.show();
+        Telegram.WebApp.MainButton.onClick(function() {
+            // Este comando nativo cierra la Mini App
+            Telegram.WebApp.close();
+        });
+
+        function enviarMensajeAlBot() {
+            // Esta es la función clave: enviar un string de datos al bot
+            // En este caso, enviamos "app_data" que el bot recibirá como un mensaje
+            const dataToSend = JSON.stringify({ action: 'mini_app_test', value: 'Datos enviados desde la webapp' });
+            
+            // Envía los datos al bot. El bot recibirá estos datos como un 'WebAppData'
+            Telegram.WebApp.sendData(dataToSend);
+            
+            // Opcional: Cerrar la app después de enviar los datos
+            Telegram.WebApp.close();
+        }
+    </script>
+
+</body>
+</html>
