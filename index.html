@@ -1,128 +1,450 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Mini App de Prueba Avanzada</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Resonancia | Hub Central</title>
+    <link rel="icon" href="https://www.potenciandotuinterior.com/sites/default/files/favi.png" type="image/png">
     
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
-        /* CSS mejorado usando variables de tema de Telegram */
-        body {
-            /* Usa el color de fondo nativo de Telegram (soporta modo oscuro) */
-            background-color: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            text-align: center;
-            line-height: 1.5;
+        :root {
+            --pti-dark: #1a3c3c; --pti-gold: #D4AF37; --bg-page: #f8fafc;
+            --white: #ffffff; --error: #ef4444; --success: #10B981; --border-color: #e2e8f0;
         }
-        .container {
-            max-width: 400px;
-            margin: 0 auto;
-            padding: 20px;
-            border-radius: 12px;
-            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            color: var(--tg-theme-text-color, #000000);
-            margin-bottom: 20px;
-        }
-        .button-primary {
-            width: 100%;
-            padding: 12px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            border: none;
-            border-radius: 8px;
-            /* Usa los colores de botón nativos de Telegram */
-            background-color: var(--tg-theme-button-color, #50a8eb);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            transition: background-color 0.2s;
-            font-weight: bold;
-        }
-        .button-primary:hover {
-            opacity: 0.9;
-        }
-        .user-card {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid var(--tg-theme-text-color, #000000);
-            border-radius: 8px;
-            text-align: left;
-            font-size: 14px;
-        }
-        .user-card p {
-            margin: 5px 0;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-page); color: #1e293b; margin: 0; height: 100vh; overflow: hidden; }
+        .hidden { display: none !important; }
+        
+        /* Modales */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(8px); z-index: 200; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: 0.3s; }
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+        .modal-card { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 25px 50px rgba(0,0,0,0.15); text-align: center; border: 1px solid var(--border-color); max-width: 400px; width: 90%; transform: scale(0.95); transition: 0.3s; }
+        .modal-overlay.active .modal-card { transform: scale(1); }
+        .modal-title { font-family: 'Playfair Display'; font-size: 22px; color: var(--pti-dark); margin-bottom: 10px; }
+        .modal-text { color: #64748b; font-size: 14px; margin-bottom: 30px; line-height: 1.5; }
+        .btn-modal { padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; transition: 0.2s; font-size: 14px; }
+        .btn-cancel { background: #f1f5f9; color: #64748b; }
+        .btn-cancel:hover { background: #e2e8f0; color: var(--pti-dark); }
+        .btn-confirm { background: var(--error); color: white; }
+        .btn-confirm:hover { background: #dc2626; }
+
+        /* Status Icons */
+        .status-icon-wrapper { width: 70px; height: 70px; margin: 0 auto 20px auto; position: relative; }
+        .status-circle { width: 100%; height: 100%; border-radius: 50%; display: flex; align-items: center; justify-content: center; animation: popIn 0.5s forwards; }
+        .status-circle.success { background-color: var(--success); }
+        .status-circle.error { background-color: var(--error); }
+        .animated-svg { width: 35px; height: 35px; fill: none; stroke: white; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 100; stroke-dashoffset: 100; animation: drawStroke 0.6s ease forwards 0.3s; }
+        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes drawStroke { 100% { stroke-dashoffset: 0; } }
+
+        /* Layout */
+        #login-view, #menu-view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transition: 0.8s cubic-bezier(0.77, 0, 0.175, 1); }
+        #login-view { z-index: 50; background: var(--bg-page); }
+        #menu-view { z-index: 10; background: var(--white); flex-direction: column; padding-top: 40px; align-items: center; justify-content: flex-start; }
+        
+        .login-card { background: white; padding: 60px 40px; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.05); width: 100%; max-width: 500px; text-align: center; border-top: 6px solid var(--pti-dark); transform: translateY(-50px); }
+        input:not(.search-input), textarea { width: 100%; padding: 15px; margin: 10px 0 20px 0; border: 1px solid var(--border-color); border-radius: 8px; font-size: 16px; outline: none; transition: 0.3s; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        textarea { resize: vertical; min-height: 100px; line-height: 1.5; }
+        input:focus, textarea:focus { border-color: var(--pti-gold); }
+        
+        .btn-pti { background: var(--pti-dark); color: white; border: none; padding: 15px 30px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; transition: 0.3s; font-size: 16px; }
+        .btn-pti:hover { background: #142e2e; }
+        .shake { animation: shake 0.4s ease-in-out; border-color: var(--error) !important; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+
+        /* Botón Generador IA */
+        .input-group-ia { position: relative; display: flex; align-items: center; gap: 10px; }
+        .btn-ia-generate { background: linear-gradient(135deg, #D4AF37, #F3E5AB); color: #1a3c3c; border: none; padding: 0 20px; height: 52px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.3s; white-space: nowrap; display: flex; align-items: center; gap: 8px; margin-top: -10px; box-shadow: 0 4px 10px rgba(212, 175, 55, 0.2); }
+        .btn-ia-generate:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(212, 175, 55, 0.3); }
+        .btn-ia-generate i { font-size: 14px; }
+
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; width: 90%; max-width: 1000px; margin-top: 30px; padding-bottom: 40px; }
+        .menu-card { background: #f8fafc; border: 1px solid var(--border-color); padding: 40px 30px; border-radius: 16px; position: relative; cursor: pointer; height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; transition: 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .menu-card:hover { transform: translateY(-5px); border-color: var(--pti-gold); box-shadow: 0 15px 30px rgba(0,0,0,0.08); }
+        .menu-card.expanded { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 100; background: var(--white); border-radius: 0; border: none; padding: 0; transform: none !important; cursor: default; justify-content: flex-start; overflow-y: auto; }
+        .menu-content { transition: opacity 0.3s; }
+        .menu-card.expanded .menu-content { display: none; }
+        .embedded-form-container { display: none; width: 100%; max-width: 900px; padding: 40px 20px; animation: fadeIn 0.5s ease 0.3s forwards; margin: 0 auto; opacity: 0; }
+        .menu-card.expanded .embedded-form-container { display: block; }
+
+        /* Tooltip Styles */
+        .tooltip-container { display: inline-block; position: relative; margin-left: 8px; vertical-align: middle; }
+        .info-icon { background: #f1f5f9; color: #64748b; width: 18px; height: 18px; border-radius: 50%; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: help; border: 1px solid #cbd5e1; }
+        .info-icon:hover { background: var(--pti-gold); color: white; border-color: var(--pti-gold); }
+        .tooltip-box { visibility: hidden; opacity: 0; position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%); width: 280px; background: var(--pti-dark); color: white; padding: 12px; border-radius: 8px; font-size: 12px; line-height: 1.4; box-shadow: 0 10px 20px rgba(0,0,0,0.15); z-index: 200; transition: 0.2s; text-align: left; pointer-events: none; }
+        .tooltip-box::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -6px; border-width: 6px; border-style: solid; border-color: var(--pti-dark) transparent transparent transparent; }
+        .tooltip-container:hover .tooltip-box { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(-5px); }
+        .tooltip-list { list-style: none; padding: 0; margin: 0; }
+        .tooltip-list li { margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px; }
+        .tooltip-list li:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .tooltip-highlight { color: var(--pti-gold); font-weight: 700; }
+
+        /* Controles & Lista */
+        .controls-wrapper { position: relative; background: #f8fafc; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 25px; height: 60px; display: flex; align-items: center; padding: 0 10px; overflow: hidden; }
+        .filter-bar { display: flex; gap: 15px; flex: 1; transition: 0.4s ease; }
+        .controls-wrapper.search-active .filter-bar { transform: translateX(-20px); opacity: 0; pointer-events: none; }
+        .filter-select { flex: 1; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 13px; color: var(--pti-dark); background: white; outline: none; cursor: pointer; }
+        .search-trigger { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: var(--pti-dark); cursor: pointer; border-radius: 50%; transition: 0.2s; margin-left: 10px; border: none; background: transparent; font-size: 16px; flex-shrink: 0; }
+        .search-trigger:hover { background: #e2e8f0; color: var(--pti-gold); }
+        .search-bar-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #f8fafc; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; transform: translateX(100%); transition: 0.4s cubic-bezier(0.22, 1, 0.36, 1); z-index: 10; box-sizing: border-box; }
+        .controls-wrapper.search-active .search-bar-container { transform: translateX(0); }
+        .search-input { flex: 1; border: none; background: transparent; font-size: 15px; color: var(--pti-dark); outline: none; padding: 10px; font-family: 'Inter', sans-serif; margin: 0 10px; }
+        .close-search { width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; color: #64748b; cursor: pointer; border-radius: 50%; transition: 0.2s; flex-shrink: 0; }
+        .close-search:hover { background: #fee2e2; color: var(--error); }
+
+        /* Lista */
+        #list-view-container { width: 100%; animation: slideUp 0.6s ease forwards; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .doc-card { background: var(--white); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px 25px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: 0.2s; }
+        .doc-card:hover { box-shadow: 0 10px 15px rgba(0,0,0,0.05); border-color: #cbd5e1; }
+        .doc-info { display: flex; flex-direction: column; gap: 6px; }
+        .doc-title { font-weight: 600; color: var(--pti-dark); font-size: 16px; line-height: 1.4; }
+        .doc-meta { font-size: 12px; color: #64748b; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .meta-pill { background: #f1f5f9; padding: 4px 10px; border-radius: 4px; font-weight: 500; border: 1px solid #e2e8f0; }
+        .doc-actions { display: flex; gap: 12px; align-items: center; }
+        
+        .btn-action-delete { background: transparent; border: 1px solid transparent; color: var(--error); font-size: 16px; cursor: pointer; transition: 0.2s; width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        .btn-action-delete:hover { background: #fef2f2; border-color: #fca5a5; transform: scale(1.05); }
+
+        .close-btn { position: fixed; top: 20px; right: 20px; background: #f1f5f9; color: var(--pti-dark); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; z-index: 110; font-size: 18px; }
+        .close-btn:hover { background: #e2e8f0; transform: rotate(90deg); }
+        .loader { display: none; color: var(--pti-gold); margin-top: 10px; text-align: center; }
+        .form-header { text-align: center; margin-bottom: 30px; }
+        .form-header h2 { font-family: 'Playfair Display'; font-size: 28px; color: var(--pti-dark); margin-bottom: 5px; }
+        .form-group { margin-bottom: 20px; text-align: left; }
+        label { display: block; font-weight: 600; font-size: 13px; color: var(--pti-dark); margin-bottom: 8px; text-transform: uppercase; }
+        .radio-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .radio-option input { display: none; }
+        .radio-label { display: block; padding: 12px; text-align: center; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; transition: 0.3s; }
+        .radio-label:hover { border-color: var(--pti-gold); }
+        .radio-option input:checked + .radio-label { background: var(--pti-dark); color: white; border-color: var(--pti-dark); }
+        @keyframes fadeIn { to { opacity: 1; } }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🚀 Control de Asistente</h1>
 
-        <div class="user-card" id="user-info">
-            Cargando datos de sesión...
+    <div id="status-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div id="status-icon-container" class="status-icon-wrapper"></div>
+            <h3 class="modal-title" id="status-title"></h3><p class="modal-text" id="status-msg"></p>
+            <button class="btn-modal btn-cancel" onclick="closeModal('status-modal')">Cerrar</button>
         </div>
-        
-        <p style="margin-top: 30px;">
-            Haz clic para enviar una orden directa a tu flujo de n8n.
-        </p>
+    </div>
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h3 class="modal-title">¿Eliminar Documento?</h3>
+            <p class="modal-text" id="confirm-text">Esta acción no se puede deshacer.</p>
+            <div class="modal-actions"><button class="btn-modal btn-cancel" onclick="closeModal('confirm-modal')">Cancelar</button><button class="btn-modal btn-confirm" onclick="executeDelete()">Sí, Eliminar</button></div>
+        </div>
+    </div>
 
-        <button class="button-primary" onclick="sendCommand()">
-            Enviar Comando a n8n: /iniciar_flujo
-        </button>
+    <div id="login-view">
+        <div class="login-card">
+            <img src="https://www.potenciandotuinterior.com/sites/default/files/Logo.png" width="390" style="margin-bottom: 35px; max-width: 90%; height: auto;">
+            <h2 style="font-family: 'Playfair Display'; margin-bottom: 5px; color: var(--pti-dark);">Acceso Resonancia</h2>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 30px;">Portal exclusivo para personal autorizado.</p>
+            <form id="loginForm">
+                <input type="password" id="password" placeholder="Contraseña..." required>
+                <button type="submit" class="btn-pti" id="btn-login">Entrar</button>
+                <div class="loader" id="login-loader"><i class="fas fa-circle-notch fa-spin"></i> Verificando...</div>
+            </form>
+        </div>
+    </div>
+
+    <div id="menu-view">
+        <img src="https://www.potenciandotuinterior.com/sites/default/files/Logo.png" width="300" style="max-width: 80%; height: auto;">
+        <h1 style="font-family: 'Playfair Display'; margin: 20px 0 5px 0; color: var(--pti-dark);">Panel de Control</h1>
+        <p style="color: #64748b;">Selecciona una operación</p>
+
+        <div class="menu-grid">
+            <div class="menu-card" id="card-upload" onclick="openCard('card-upload')">
+                <div class="menu-content"><div style="font-size: 50px; color: var(--pti-gold); margin-bottom: 25px;"><i class="fas fa-cloud-upload-alt"></i></div><div style="font-weight: 700; font-size: 20px;">Subir Documento</div><div style="font-size: 14px; color: #64748b; margin-top: 10px;">Alimentar Base de Datos</div></div>
+                <div class="embedded-form-container" onclick="event.stopPropagation()">
+                    <div class="close-btn" onclick="closeCard('card-upload', event)"><i class="fas fa-times"></i></div>
+                    <div class="form-header"><h2>Cargar Documento</h2><p>Ingresa nuevos documentos PDF/Texto.</p></div>
+                    <form id="uploadForm">
+                        <div class="form-group"><label>Nombre del Documento</label><input type="text" name="nombre_documento" placeholder="Ej: Protocolo Ansiedad" required></div>
+                        <div class="form-group">
+                            <label>Pilar Estratégico <div class="tooltip-container"><div class="info-icon"><i class="fas fa-question"></i></div><div class="tooltip-box"><ul class="tooltip-list"><li><span class="tooltip-highlight">Sinergia:</span> Conexión Campus + Coaching.</li><li><span class="tooltip-highlight">Metodología:</span> Visión general PTI.</li><li><span class="tooltip-highlight">Especialización:</span> Deep Dive técnico (PESC).</li><li><span class="tooltip-highlight">Formación:</span> Contenido para Coaches.</li></ul></div></div></label>
+                            <select name="pilar" style="width:100%; padding:14px; border:1px solid #e2e8f0; border-radius:8px;" required>
+                                <option value="" disabled selected>Selecciona...</option>
+                                <option value="Sinergia">Sinergia</option><option value="Especialización">Especialización</option><option value="Metodología">Metodología</option><option value="Formación">Formación</option><option value="Conocimiento Interno">Conocimiento Interno</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>Arquetipo Objetivo</label><div class="radio-group"><div class="radio-option"><input type="radio" name="arquetipo" id="ana" value="Ana" required><label for="ana" class="radio-label">Ana</label></div><div class="radio-option"><input type="radio" name="arquetipo" id="david" value="David"><label for="david" class="radio-label">David</label></div><div class="radio-option"><input type="radio" name="arquetipo" id="ambos" value="Ambos"><label for="ambos" class="radio-label">Ambos</label></div></div></div>
+                        <div class="form-group"><label>Link al Documento (Drive)</label><input type="url" name="url_drive" placeholder="https://docs.google.com/..." required></div>
+                        <button type="submit" class="btn-pti">SUBIR AHORA</button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="menu-card" id="card-update" onclick="openListCard('card-update')">
+                <div class="menu-content"><div style="font-size: 50px; color: var(--pti-gold); margin-bottom: 25px;"><i class="fas fa-database"></i></div><div style="font-weight: 700; font-size: 20px;">Actualizar Registros</div><div style="font-size: 14px; color: #64748b; margin-top: 10px;">Gestor de Base de Datos</div></div>
+                <div class="embedded-form-container" onclick="event.stopPropagation()">
+                    <div class="close-btn" onclick="closeListCard('card-update', event)"><i class="fas fa-times"></i></div>
+                    <div class="form-header"><h2>Documentos Activos</h2><p>Gestión en tiempo real.</p></div>
+                    <div class="controls-wrapper" id="controls-wrapper">
+                        <div class="filter-bar"><select id="filter-pilar" class="filter-select"><option value="all">Todos los Pilares</option></select><select id="filter-arquetipo" class="filter-select"><option value="all">Todos los Arquetipos</option></select><select id="filter-uploader" class="filter-select"><option value="all">Todos los Autores</option></select></div>
+                        <button class="search-trigger" onclick="toggleSearch(true)"><i class="fas fa-search"></i></button>
+                        <div class="search-bar-container">
+                            <i class="fas fa-search" style="color:#cbd5e1; flex-shrink: 0;"></i>
+                            <input type="text" id="search-input" class="search-input" placeholder="Buscar por nombre...">
+                            <div class="close-search" onclick="toggleSearch(false)"><i class="fas fa-times"></i></div>
+                        </div>
+                    </div>
+                    <div id="list-loader" class="loader" style="display:block;"><i class="fas fa-circle-notch fa-spin" style="font-size: 24px;"></i><br>Cargando registros...</div>
+                    <div id="list-view-container"></div>
+                </div>
+            </div>
+
+            <div class="menu-card" id="card-blog" onclick="openCard('card-blog')">
+                <div class="menu-content"><div style="font-size: 50px; color: var(--pti-gold); margin-bottom: 25px;"><i class="fas fa-pen-nib"></i></div><div style="font-weight: 700; font-size: 20px;">Publicar Blog</div><div style="font-size: 14px; color: #64748b; margin-top: 10px;">Enlazar Artículo + IA</div></div>
+                
+                <div class="embedded-form-container" onclick="event.stopPropagation()">
+                    <div class="close-btn" onclick="closeCard('card-blog', event)"><i class="fas fa-times"></i></div>
+                    <div class="form-header"><h2>Nuevo Artículo</h2><p>Agrega un blog a la base de conocimiento.</p></div>
+                    
+                    <form id="blogForm">
+                        <div class="form-group"><label>Título del Artículo</label><input type="text" name="nombre_blog" placeholder="Ej: Cómo sanar al niño interior" required></div>
+                        
+                      <div class="form-group">
+    <label>
+        Categoría del Blog 
+        <div class="tooltip-container">
+            <div class="info-icon"><i class="fas fa-question"></i></div>
+            <div class="tooltip-box" style="width: 320px;"> <ul class="tooltip-list">
+                    <li><span class="tooltip-highlight">Carrera y Propósito:</span> Misión de vida, vocación y alineación profesional.</li>
+                    <li><span class="tooltip-highlight">Gestión Emocional:</span> Ansiedad, estrés, miedo y regulación del sistema nervioso.</li>
+                    <li><span class="tooltip-highlight">Liberación de Patrones:</span> Trabajo de raíz subconsciente y P.E.S.C.</li>
+                    <li><span class="tooltip-highlight">Metodología para Coaches:</span> Herramientas técnicas para profesionales (Grados).</li>
+                    <li><span class="tooltip-highlight">Autoconocimiento Profundo:</span> Sombra, Niño Interior, Ego y Espiritualidad.</li>
+                    <li><span class="tooltip-highlight">Liderazgo y Equipos:</span> Gestión de grupos y cultura de empresa consciente.</li>
+                    <li><span class="tooltip-highlight">Transformación Personal:</span> Cambios de identidad y superación general.</li>
+                </ul>
+            </div>
+        </div>
+    </label>
+    <select name="categoria" style="width:100%; padding:14px; border:1px solid #e2e8f0; border-radius:8px;" required>
+        <option value="" disabled selected>Selecciona temática...</option>
+        <option value="Carrera y Propósito">Carrera y Propósito</option>
+        <option value="Gestión Emocional">Gestión Emocional</option>
+        <option value="Liberación de Patrones">Liberación de Patrones</option>
+        <option value="Metodología para Coaches">Metodología para Coaches</option>
+        <option value="Autoconocimiento Profundo">Autoconocimiento Profundo</option>
+        <option value="Liderazgo y Equipos">Liderazgo y Equipos</option>
+        <option value="Transformación Personal">Transformación Personal</option>
+    </select>
+</div>
+
+                        <div class="form-group"><label>Arquetipo Objetivo</label><div class="radio-group"><div class="radio-option"><input type="radio" name="arquetipo_blog" id="ana_b" value="Ana" required><label for="ana_b" class="radio-label">Ana</label></div><div class="radio-option"><input type="radio" name="arquetipo_blog" id="david_b" value="David"><label for="david_b" class="radio-label">David</label></div><div class="radio-option"><input type="radio" name="arquetipo_blog" id="ambos_b" value="Ambos"><label for="ambos_b" class="radio-label">Ambos</label></div></div></div>
+
+                        <div class="form-group">
+                            <label>Enlace del Blog (URL)</label>
+                            <div class="input-group-ia">
+                                <input type="url" id="url_blog" name="url_blog" placeholder="https://..." required>
+                                <button type="button" class="btn-ia-generate" onclick="generateSummary()">
+                                    <i class="fas fa-magic"></i> Generar Resumen
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Descripción para la IA (Resumen)</label>
+                            <div class="loader" id="ai-loader" style="text-align:left; margin-bottom:10px;"><i class="fas fa-circle-notch fa-spin"></i> Leyendo artículo y extrayendo conceptos...</div>
+                            <textarea name="descripcion_blog" id="desc_blog" placeholder="Haz clic en 'Generar Resumen' para que la IA complete esto automáticamente..." required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn-pti" id="btn-save-blog">GUARDAR BLOG</button>
+                        <div class="loader" id="blog-save-loader"><i class="fas fa-spinner fa-spin"></i> Guardando...</div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // 1. Inicializar la WebApp de Telegram
-        Telegram.WebApp.ready();
-        
-        // 2. Mostrar la información del usuario (Autenticación)
-        // La información viene en initDataUnsafe, firmada por Telegram
-        const user = Telegram.WebApp.initDataUnsafe.user;
-        const userInfoDiv = document.getElementById('user-info');
+        // === VARIABLES DE CONFIGURACIÓN ===
+        const URL_VALIDADOR = 'https://agt.potenciandotuinterior.com/webhook/validar-acceso-resonancia';
+        const URL_PROCESAR_CARGA = 'https://agt.potenciandotuinterior.com/webhook/portal/carga-documentos';
+        const URL_OBTENER_DOCS = 'https://agt.potenciandotuinterior.com/webhook/consultar-documentos';
+        const URL_ELIMINAR_DOC = 'https://agt.potenciandotuinterior.com/webhook/portal/eliminar-documento';
+        const URL_GENERAR_RESUMEN = 'https://agt.potenciandotuinterior.com/webhook/generar-resumen-blog'; 
+        const URL_GUARDAR_BLOG = 'https://agt.potenciandotuinterior.com/webhook/portal/guardar-blog';
 
-        if (user) {
-            userInfoDiv.innerHTML = `
-                <p style="color: var(--tg-theme-link-color);">✅ Sesión de Telegram Iniciada</p>
-                <p><strong>ID de Telegram (user_id):</strong> <code>${user.id}</code></p>
-                <p>Nombre: ${user.first_name} ${user.last_name || ''}</p>
-                <p>Username: ${user.username ? '@' + user.username : 'No disponible'}</p>
-            `;
-        } else {
-            userInfoDiv.innerHTML = `<p>⚠️ No se pudo obtener la información del usuario.</p>`;
+        let allDocs = []; 
+        let currentDocToDelete = null;
+
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        function showStatus(type, title, msg) {
+            const container = document.getElementById('status-icon-container');
+            const titleEl = document.getElementById('status-title');
+            const msgEl = document.getElementById('status-msg');
+            container.innerHTML = type === 'success' ? `<div class="status-circle success"><svg class="animated-svg" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></div>` : `<div class="status-circle error"><svg class="animated-svg" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>`;
+            titleEl.textContent = title; msgEl.textContent = msg; document.getElementById('status-modal').classList.add('active');
         }
 
-        // 3. Función para enviar el comando a n8n y darle feedback al usuario
-        function sendCommand() {
-            // Este string será el dato que recibirá el bot.
-            const commandString = '/iniciar_flujo'; 
+        // LOGIN CON BYPASS PARA PRUEBAS
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault(); 
+            const passInput = document.getElementById('password'); 
+            const btn = document.getElementById('btn-login'); 
+            const loader = document.getElementById('login-loader');
             
-            // Envía los datos al bot. El bot recibirá estos datos como 'web_app_data'.
-            Telegram.WebApp.sendData(commandString);
+            passInput.classList.remove('shake'); 
+            btn.style.display = 'none'; 
+            loader.style.display = 'block';
 
-            // Muestra una notificación emergente para el usuario
-            Telegram.WebApp.showPopup({
-                message: `El comando "${commandString}" ha sido enviado a tu asistente.`,
-                title: 'Orden Enviada',
-                buttons: [{id: 'ok', type: 'ok'}],
-            });
-            
-            // Opcional: cierra la Mini App después de un breve momento
-            setTimeout(() => {
-                Telegram.WebApp.close();
-            }, 1000); 
-        }
+            // BYPASS LOCAL: Si la contraseña es "admin" o "resonancia", entra directo.
+            if(passInput.value === 'admin' || passInput.value === 'resonancia') {
+                console.log("Acceso Debug Autorizado");
+                setTimeout(() => { document.getElementById('login-view').style.transform = 'translateY(-100%)'; }, 500);
+                return;
+            }
 
-        // 4. Configurar el botón nativo de cierre de Telegram (es un extra visual)
-        Telegram.WebApp.MainButton.setText('Cerrar Mini App');
-        Telegram.WebApp.MainButton.show();
-        Telegram.WebApp.MainButton.onClick(function() {
-            Telegram.WebApp.close();
+            try {
+                const res = await fetch(URL_VALIDADOR, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ password: passInput.value }) });
+                const data = await res.json();
+                console.log("Respuesta Webhook:", data);
+                
+                let isSuccess = false; 
+                if (data.success === true) isSuccess = true; 
+                else if (Array.isArray(data) && data.length > 0 && data[0].success === true) isSuccess = true;
+                
+                if (isSuccess) document.getElementById('login-view').style.transform = 'translateY(-100%)'; 
+                else throw new Error();
+            } catch (err) { 
+                console.error("Error Login:", err);
+                btn.style.display = 'block'; loader.style.display = 'none'; 
+                passInput.classList.add('shake'); passInput.value = ''; passInput.focus(); 
+                setTimeout(() => { passInput.classList.remove('shake'); }, 500); 
+            }
         });
+
+        // GENERADOR IA
+        async function generateSummary() {
+            const urlInput = document.getElementById('url_blog');
+            const loader = document.getElementById('ai-loader');
+            const textArea = document.getElementById('desc_blog');
+            
+            if(!urlInput.value) { alert('Por favor, pega primero la URL del artículo.'); return; }
+            if(!urlInput.value.startsWith('http')) { alert('La URL debe empezar por http:// o https://'); return; }
+
+            loader.style.display = 'block';
+            textArea.style.opacity = '0.5';
+
+            try {
+                const res = await fetch(URL_GENERAR_RESUMEN, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ url: urlInput.value })
+                });
+                const data = await res.json();
+                
+                // Adapta esto según devuelva tu n8n (puede ser data.description, data.resumen, data[0].text...)
+                const resumen = data.description || data.resumen || data.text || (Array.isArray(data) ? data[0].description : "");
+                
+                if(resumen) {
+                    textArea.value = resumen;
+                    textArea.style.opacity = '1';
+                    showStatus('success', 'Resumen Generado', 'La IA ha analizado el artículo correctamente.');
+                } else {
+                    throw new Error('Respuesta vacía');
+                }
+            } catch (err) {
+                console.error(err);
+                showStatus('error', 'Error IA', 'No se pudo leer el artículo. Verifica la URL o escríbelo manualmente.');
+                textArea.style.opacity = '1';
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        // GUARDAR BLOG
+        document.getElementById('blogForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-save-blog');
+            const loader = document.getElementById('blog-save-loader');
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+
+            btn.style.display = 'none'; loader.style.display = 'block';
+
+            try {
+                await fetch(URL_GUARDAR_BLOG, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                showStatus('success', 'Blog Publicado', 'El artículo se ha añadido al cerebro de Sergio.');
+                document.getElementById('blogForm').reset();
+            } catch (err) {
+                showStatus('error', 'Error', 'No se pudo guardar el registro.');
+            } finally {
+                btn.style.display = 'block'; loader.style.display = 'none';
+            }
+        });
+
+        // SUBIDA DOCUMENTOS (PDF)
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault(); const btn = document.getElementById('btn-upload'); const loader = document.getElementById('upload-loader');
+            const formData = new FormData(this); const data = Object.fromEntries(formData.entries());
+            btn.style.display = 'none'; loader.style.display = 'block';
+            try {
+                await fetch(URL_PROCESAR_CARGA, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+                showStatus('success', 'Documento Subido', 'Base de datos actualizada con éxito.');
+                document.getElementById('form-content-area').style.display = 'block'; document.getElementById('uploadForm').reset();
+            } catch (err) { showStatus('error', 'Error', 'No se pudo subir el documento.'); } 
+            finally { btn.style.display = 'block'; loader.style.display = 'none'; }
+        });
+
+        // FUNCIONES COMUNES
+        function openCard(id) { document.getElementById(id).classList.add('expanded'); document.body.style.overflow = 'hidden'; }
+        function closeCard(id, event) { if(event) event.stopPropagation(); document.getElementById(id).classList.remove('expanded'); document.body.style.overflow = 'auto'; }
+        
+        async function openListCard(id) {
+            document.getElementById(id).classList.add('expanded'); document.body.style.overflow = 'hidden';
+            const listContainer = document.getElementById('list-view-container'); const listLoader = document.getElementById('list-loader');
+            listContainer.innerHTML = ''; listContainer.style.display = 'none'; listLoader.style.display = 'block';
+            try {
+                const res = await fetch(URL_OBTENER_DOCS); allDocs = await res.json(); populateFilters(allDocs); renderDocuments(allDocs); 
+            } catch (err) { listContainer.innerHTML = '<p style="text-align:center; color:#ef4444;">Error cargando datos.</p>'; } 
+            finally { listLoader.style.display = 'none'; listContainer.style.display = 'block'; }
+        }
+        function closeListCard(id, event) { if(event) event.stopPropagation(); document.getElementById(id).classList.remove('expanded'); document.body.style.overflow = 'auto'; toggleSearch(false); }
+
+        function confirmDelete(nombreDoc) { currentDocToDelete = nombreDoc; document.getElementById('confirm-text').innerText = `¿Seguro que deseas eliminar "${nombreDoc}"? Esta acción no se puede deshacer.`; openModal('confirm-modal'); }
+        async function executeDelete() {
+            closeModal('confirm-modal');
+            const cardId = `doc-${sanitizeId(currentDocToDelete)}`; const cardElement = document.getElementById(cardId);
+            if(cardElement) cardElement.style.opacity = '0.5';
+            try {
+                const res = await fetch(URL_ELIMINAR_DOC, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ nombre: currentDocToDelete }) });
+                allDocs = allDocs.filter(d => d.nombre !== currentDocToDelete); applyFilters(); showStatus('success', 'Eliminado', 'El documento se ha borrado correctamente.');
+            } catch (err) { if(cardElement) cardElement.style.opacity = '1'; showStatus('error', 'Error', 'No se pudo conectar con el servidor.'); }
+        }
+
+        function renderDocuments(docs) {
+            const container = document.getElementById('list-view-container'); container.innerHTML = '';
+            if(!docs || docs.length === 0) { container.innerHTML = '<p style="text-align:center; color:#64748b; margin-top:20px;">No hay documentos.</p>'; return; }
+            docs.forEach(doc => {
+                const card = document.createElement('div'); card.className = 'doc-card'; card.id = `doc-${sanitizeId(doc.nombre)}`;
+                const info = `<div class="doc-info"><div class="doc-title">${doc.nombre}</div><div class="doc-meta"><span class="meta-pill" style="color:var(--pti-dark);"><i class="fas fa-layer-group"></i> ${doc.pilar}</span><span class="meta-pill"><i class="fas fa-user-circle"></i> ${doc.arquetipo}</span><span style="margin-left:5px; font-style:italic;">Subido por: ${doc.uploader || 'Admin'}</span></div></div>`;
+                const actions = `<div class="doc-actions"><button onclick="confirmDelete('${doc.nombre}')" class="btn-action-delete" title="Eliminar Registro"><i class="far fa-trash-alt"></i></button></div>`;
+                card.innerHTML = info + actions; container.appendChild(card);
+            });
+        }
+        function sanitizeId(str) { return str ? str.replace(/[^a-z0-9]/gi, '-').toLowerCase() : 'id'; }
+
+        function toggleSearch(show) { const wrapper = document.getElementById('controls-wrapper'); const input = document.getElementById('search-input'); if(show) { wrapper.classList.add('search-active'); setTimeout(() => input.focus(), 300); } else { wrapper.classList.remove('search-active'); input.value = ''; applyFilters(); } }
+        document.getElementById('search-input').addEventListener('input', (e) => { const term = e.target.value.toLowerCase(); const filtered = allDocs.filter(doc => doc.nombre.toLowerCase().includes(term)); renderDocuments(filtered); });
+        function populateFilters(docs) { const pilares = new Set(); const arquetipos = new Set(); const uploaders = new Set(); docs.forEach(doc => { if(doc.pilar) pilares.add(doc.pilar); if(doc.arquetipo) arquetipos.add(doc.arquetipo); if(doc.uploader) uploaders.add(doc.uploader); }); fillSelect('filter-pilar', pilares); fillSelect('filter-arquetipo', arquetipos); fillSelect('filter-uploader', uploaders); }
+        function fillSelect(id, set) { const select = document.getElementById(id); select.innerHTML = select.options[0].outerHTML; set.forEach(val => { const opt = document.createElement('option'); opt.value = val; opt.innerText = val; select.appendChild(opt); }); select.onchange = applyFilters; }
+        function applyFilters() { const pilar = document.getElementById('filter-pilar').value; const arquetipo = document.getElementById('filter-arquetipo').value; const uploader = document.getElementById('filter-uploader').value; const filtered = allDocs.filter(doc => { return (pilar === 'all' || doc.pilar === pilar) && (arquetipo === 'all' || doc.arquetipo === arquetipo) && (uploader === 'all' || doc.uploader === uploader); }); renderDocuments(filtered); }
     </script>
 </body>
 </html>
